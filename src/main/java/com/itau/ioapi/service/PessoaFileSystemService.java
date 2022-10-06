@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class PessoaFileSystemService {
 
     public List<Pessoa> desserialize(Path path) throws IOException {
-        //   Path path = Paths.get(Path path = Paths.get(System.getProperty("user.dir"), "/teste.txt");, "/mapas/mapa-virgulas.txt");
+
         return Files.readString(path)
                 .lines()
                 .map(string -> {

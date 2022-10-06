@@ -1,50 +1,49 @@
 package com.itau.ioapi.controller;
 
+import ch.qos.logback.core.util.FileUtil;
 import com.itau.ioapi.model.Pessoa;
+import com.itau.ioapi.service.MapaService;
 import com.itau.ioapi.service.PessoaFileSystemService;
 import com.itau.ioapi.service.SignosService;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
+import org.apache.tomcat.util.http.fileupload.IOUtils;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @RestController
 @RequestMapping("/api/mapa")
 @RequiredArgsConstructor
 public class MapaController {
-    private static final String HOME_DIR = System.getProperty("user.dir");
+    private final MapaService mapaService;
 
-    private final SignosService signosService;
-    private final PessoaFileSystemService pessoaFileSystemService;
+    @PostMapping(produces = "application/zip")
+    public ResponseEntity<byte[]> getMapaAstral(@RequestBody MultipartFile file) throws IOException {
 
-    @PostMapping
-    public ResponseEntity<Void> getMapaAstral(@RequestBody MultipartFile file) throws IOException {
-        Path tempPath = Path.of(HOME_DIR, System.currentTimeMillis() + ".txt");
+        var baos = mapaService.generateOutputStream(file);
 
-        pessoaFileSystemService.serialize(file.getBytes(), tempPath);
-
-        List<Pessoa> pessoaList = pessoaFileSystemService.desserialize(tempPath);
-
-        var p = pessoaList.stream()
-                .map(signosService::getInformacoesSignosEmString)
-                .map(pessoaslist -> pessoaslist
-                        .stream()
-                        .map(pessoa -> pessoa.getBytes())
-                        .collect(Collectors.toList())
-                )
-//                .map(list1 -> list1.stream().reduce((acc, el) -> new Byte[]{acc,el}))
-                .collect(Collectors.toList());
-
-        return null;
+        return ResponseEntity.ok(baos.toByteArray());
     }
 
 }
