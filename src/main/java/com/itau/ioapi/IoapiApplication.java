@@ -12,7 +12,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -29,19 +33,24 @@ public class IoapiApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+
         Path path = Paths.get(HOME_DIR, "/mapas/mapa-virgulas.txt");
 
-        // Desserializa o arquivo
         List<Pessoa> pessoas = pessoaFileSystemService.desserialize(path);
 
-        // Imprime as informaçoes no console
         pessoas.forEach(signosService::imprimirInformacoesSignos);
 
-        // Serializa o mapa quantico de cada pessoa
-        pessoas.stream()
-                .parallel()
-                .map(signosService::getInformacoesSignosEmString)
-                .forEach(getConsumerForSerialize());
+        final List<CompletableFuture<List<String>>> pessoasFuture = pessoas
+                .stream()
+                .map(p -> CompletableFuture.supplyAsync(() -> signosService.getInformacoesSignosEmString(p)))
+                .collect(Collectors.toList());
+
+        final List<List<String>> pessoasList = pessoasFuture
+                .stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+
+        pessoasList.forEach(getConsumerForSerialize());
     }
 
     private Consumer<List<String>> getConsumerForSerialize() {

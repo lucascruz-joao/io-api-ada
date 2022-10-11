@@ -20,6 +20,7 @@ public class PessoaFileSystemService {
 
         return Files.readString(path)
                 .lines()
+                .parallel()
                 .map(string -> {
                     String[] attr = string.split(",");
                     String nome = attr[0];
